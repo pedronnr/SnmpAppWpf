@@ -20,8 +20,11 @@ namespace SnmpAppWpf
         #region Ctors
         public MainWindowViewModel()
         {
+            YFormatter = value => value.ToString();
+
             IpAddress = "192.168.1.24";
             Community = "public";
+            Text = "Start";
 
             snmpResolver = new SnmpResolver(IpAddress, Community);
 
@@ -44,11 +47,11 @@ namespace SnmpAppWpf
         private string machineName;
         public string MachineName { get { return machineName; } set { machineName = value; OnPropertyChanged(nameof(MachineName)); } }
 
-        public string upTime;
+        private string upTime;
         public string UpTime { get { return upTime; } set { upTime = value; OnPropertyChanged(nameof(UpTime)); } }
 
-        private bool isRunning;
-        public bool IsRunning { get { return isRunning; } set { isRunning = value; OnPropertyChanged(nameof(IsRunning)); } }
+        private string text;
+        public string Text { get { return text; } set { text = value; OnPropertyChanged(nameof(Text)); } }
 
         public IList<string> Logs { get; set; } = new List<string>();
         #endregion
@@ -77,17 +80,20 @@ namespace SnmpAppWpf
         {
             snmpResolver.SetConfig(IpAddress, Community);
             aTimer.Enabled = !aTimer.Enabled;
+            Text = aTimer.Enabled ? "Stop" : "Start";
         }
 
         private void LoadData()
         {
+            MachineName = snmpResolver.OidTable.FirstOrDefault(r => r.Description == "sysDescr")?.CurrentResult;
+            UpTime = snmpResolver.OidTable.FirstOrDefault(r => r.Description == "sysUpTime")?.CurrentResult;
+
             var oidRowInOctets = snmpResolver.OidTable.FirstOrDefault(r => r.Description == "ifInOctets");
             var oidRowOutOctets = snmpResolver.OidTable.FirstOrDefault(r => r.Description == "ifOutOctets");
 
             if (oidRowInOctets != null && oidRowOutOctets != null)
             {
                 Labels = Array.ConvertAll(oidRowInOctets.Results.ToArray(), (d) => $"{d.RequestDate.Hour}:{d.RequestDate.Minute}:{d.RequestDate.Second}");
-                YFormatter = value => value.ToString();
 
                 // adds to input octet
                 double inOctets = Convert.ToDouble(oidRowInOctets.CurrentResult) -
