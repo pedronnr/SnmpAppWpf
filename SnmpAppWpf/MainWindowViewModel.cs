@@ -1,10 +1,12 @@
-﻿using LiveCharts;
+﻿using GalaSoft.MvvmLight.Command;
+using LiveCharts;
 using SnmpAppWpf.Snmp;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Timers;
+using System.Windows.Input;
 
 namespace SnmpAppWpf
 {
@@ -13,12 +15,14 @@ namespace SnmpAppWpf
         #region Variables
         private SnmpResolver snmpResolver;
         private Timer aTimer;
-        public event PropertyChangedEventHandler PropertyChanged;
         #endregion
 
         #region Ctors
         public MainWindowViewModel()
         {
+            IpAddress = "192.168.1.24";
+            Community = "public";
+
             snmpResolver = new SnmpResolver(IpAddress, Community);
 
             SetTimer();
@@ -30,9 +34,22 @@ namespace SnmpAppWpf
         public ChartValues<double> OutputValues { get; set; } = new ChartValues<double>();
         public string[] Labels { get; set; } = new string[20];
         public Func<double, string> YFormatter { get; set; }
-        public string IpAddress { get; set; } = "192.168.1.24";
-        public string Community { get; set; } = "public";
-        public bool IsRunning { get; set; }
+
+        private string ipAddress;
+        public string IpAddress { get { return ipAddress; } set { ipAddress = value; OnPropertyChanged(nameof(IpAddress)); } }
+
+        private string community;
+        public string Community { get { return community; } set { community = value; OnPropertyChanged(nameof(Community)); } }
+
+        private string machineName;
+        public string MachineName { get { return machineName; } set { machineName = value; OnPropertyChanged(nameof(MachineName)); } }
+
+        public string upTime;
+        public string UpTime { get { return upTime; } set { upTime = value; OnPropertyChanged(nameof(UpTime)); } }
+
+        private bool isRunning;
+        public bool IsRunning { get { return isRunning; } set { isRunning = value; OnPropertyChanged(nameof(IsRunning)); } }
+
         public IList<string> Logs { get; set; } = new List<string>();
         #endregion
 
@@ -42,13 +59,24 @@ namespace SnmpAppWpf
             aTimer = new Timer(1000);
             aTimer.Elapsed += OnTimedEvent;
             aTimer.AutoReset = true;
-            aTimer.Enabled = true;
+            aTimer.Enabled = false;
         }
 
         private void OnTimedEvent(Object source, ElapsedEventArgs e)
         {
             GetSnmp();
             LoadData();
+        }
+
+        public ICommand StartStopCommand
+        {
+            get { return new RelayCommand(StartStop); }
+        }
+
+        public void StartStop()
+        {
+            snmpResolver.SetConfig(IpAddress, Community);
+            aTimer.Enabled = !aTimer.Enabled;
         }
 
         private void LoadData()
@@ -80,12 +108,14 @@ namespace SnmpAppWpf
         #endregion
 
         #region PropertyChanged
-        // Create the OnPropertyChanged method to raise the event
-        // The calling member's name will be used as the parameter.
-        //protected void OnPropertyChanged([CallerMemberName] string name = null)
-        //{
-        //    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        //}
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void OnPropertyChanged(string propertyName)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
         #endregion
     }
 }

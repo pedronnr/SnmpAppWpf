@@ -14,6 +14,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="1*" />
             <RowDefinition Height="1*" />
+            <RowDefinition Height="1*" />
             <RowDefinition Height="9*" />
         </Grid.RowDefinitions>
 
@@ -24,9 +25,17 @@
             <TextBox Text="{Binding Community, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="250" />
         </StackPanel>
 
-        <Button Grid.Row="1" Content="Start" Command="{Binding StartCommand}" />
+        <Button Grid.Row="1" Content="Start"
+                Command="{Binding StartStopCommand}" Margin="5" />
 
-        <lvc:CartesianChart Grid.Row="2" LegendLocation="Right">
+        <StackPanel Grid.Row="2" Orientation="Horizontal">
+            <Label Content="Máquina:" FontWeight="ExtraBold" />
+            <Label Grid.Row="2" Content="{Binding MachineName}" />
+            <Label Content="Up Time:" FontWeight="ExtraBold" />
+            <Label Grid.Row="2" Content="{Binding MachineName}" />
+        </StackPanel>
+
+        <lvc:CartesianChart Grid.Row="3" LegendLocation="Right">
             <lvc:CartesianChart.Series>
                 <lvc:LineSeries Values="{Binding InputValues}" StrokeThickness="2" StrokeDashArray="2"
                                 Title="In Octets"

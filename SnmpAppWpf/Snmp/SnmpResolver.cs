@@ -14,14 +14,14 @@ namespace SnmpAppWpf.Snmp
 
         public SnmpResolver(string ipAddress, string community)
         {
-            IpAddress = ipAddress;
-            Community = community;
+            ipAddress = ipAddress;
+            community = community;
 
             GenerateOids();
         }
 
-        public string Community { get; set; }
-        public string IpAddress { get; set; }
+        private string community = string.Empty;
+        private string ipAddress = string.Empty;
         public IList<OidRow> OidTable { get; set; }
         public IList<string> Errors { get; set; }
 
@@ -75,16 +75,22 @@ namespace SnmpAppWpf.Snmp
             }
         }
 
+        public void SetConfig(string ipAddress, string community)
+        {
+            this.ipAddress = ipAddress;
+            this.community = community;
+        }
+
         public void Get()
         {
             // SNMP community name
-            OctetString community = new OctetString(Community);
+            OctetString communityObj = new OctetString(community);
 
             // Define agent parameters class
-            AgentParameters param = new AgentParameters(community);
+            AgentParameters param = new AgentParameters(communityObj);
             param.Version = SnmpVersion.Ver2;
 
-            IpAddress agent = new IpAddress(IpAddress);
+            IpAddress agent = new IpAddress(ipAddress);
 
             // Construct target
             UdpTarget target = new UdpTarget((IPAddress)agent, 161, 2000, 1);
