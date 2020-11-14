@@ -1,12 +1,17 @@
 ﻿using GalaSoft.MvvmLight.Command;
 using LiveCharts;
+using LiveCharts.Configurations;
+using LiveCharts.Defaults;
+using LiveCharts.Wpf;
 using SnmpAppWpf.Snmp;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Timers;
+using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace SnmpAppWpf
 {
@@ -20,11 +25,11 @@ namespace SnmpAppWpf
         #region Ctors
         public MainWindowViewModel()
         {
-            YFormatter = value => value.ToString();
-
             IpAddress = "192.168.1.24";
             Community = "public";
             Text = "Start";
+
+            Initialize();
 
             snmpResolver = new SnmpResolver(IpAddress, Community);
 
@@ -33,9 +38,7 @@ namespace SnmpAppWpf
         #endregion
 
         #region Properties
-        public ChartValues<double> InputValues { get; set; } = new ChartValues<double>();
-        public ChartValues<double> OutputValues { get; set; } = new ChartValues<double>();
-        public string[] Labels { get; set; } = new string[20];
+        public Func<double, string> XFormatter { get; set; }
         public Func<double, string> YFormatter { get; set; }
 
         private string ipAddress;
@@ -52,6 +55,8 @@ namespace SnmpAppWpf
 
         private string text;
         public string Text { get { return text; } set { text = value; OnPropertyChanged(nameof(Text)); } }
+
+        public SeriesCollection Series { get; set; }
 
         public IList<string> Logs { get; set; } = new List<string>();
         #endregion
@@ -76,6 +81,44 @@ namespace SnmpAppWpf
             get { return new RelayCommand(StartStop); }
         }
 
+        private void Initialize()
+        {
+            XFormatter = d => new DateTime((long)d).ToString("HH:mm:ss");
+            YFormatter = value => value.ToString();
+
+            var gradientBrush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(0, 1)
+            };
+            gradientBrush.GradientStops.Add(new GradientStop(Color.FromRgb(33, 148, 241), 0));
+            gradientBrush.GradientStops.Add(new GradientStop(Colors.Transparent, 1));
+
+            Series = new SeriesCollection()
+            {
+                new LineSeries
+                {
+                    StrokeThickness = 2,
+                    Title = "In Octets",
+                    Stroke = Brushes.Red,
+                    LineSmoothness = 1,
+                    PointGeometrySize = 10,
+                    Fill = gradientBrush,
+                    Values = new ChartValues<DateTimePoint>()
+                },
+                new LineSeries
+                {
+                    StrokeThickness = 2,
+                    Title = "Out Octets",
+                    Stroke = Brushes.Blue,
+                    LineSmoothness = 1,
+                    PointGeometrySize = 10,
+                    Fill = gradientBrush,
+                    Values = new ChartValues<DateTimePoint>()
+                }
+            };
+        }
+
         public void StartStop()
         {
             snmpResolver.SetConfig(IpAddress, Community);
@@ -93,17 +136,16 @@ namespace SnmpAppWpf
 
             if (oidRowInOctets != null && oidRowOutOctets != null)
             {
-                Labels = Array.ConvertAll(oidRowInOctets.Results.ToArray(), (d) => $"{d.RequestDate.Hour}:{d.RequestDate.Minute}:{d.RequestDate.Second}");
-
                 // adds to input octet
-                double inOctets = Convert.ToDouble(oidRowInOctets.CurrentResult) -
-                                    Convert.ToDouble(string.IsNullOrEmpty(oidRowInOctets.PreviousResult) ? "0" : oidRowInOctets.PreviousResult);
-                InputValues.Add(inOctets);
+                double inOctets = string.IsNullOrEmpty(oidRowInOctets.PreviousResult) ? 0 :
+                                   Convert.ToDouble(oidRowInOctets.CurrentResult) - Convert.ToDouble(oidRowInOctets.PreviousResult);
+
+                Series[0].Values.Add(new DateTimePoint(oidRowInOctets.CurrentDate, inOctets));
 
                 // adds to output octet
-                double outOctets = Convert.ToDouble(oidRowOutOctets.CurrentResult) -
-                                    Convert.ToDouble(string.IsNullOrEmpty(oidRowOutOctets.PreviousResult) ? "0" : oidRowOutOctets.PreviousResult);
-                OutputValues.Add(outOctets);
+                double outOctets = string.IsNullOrEmpty(oidRowOutOctets.PreviousResult) ? 0 :
+                                    Convert.ToDouble(oidRowOutOctets.CurrentResult) - Convert.ToDouble(oidRowOutOctets.PreviousResult);
+                Series[1].Values.Add(new DateTimePoint(oidRowOutOctets.CurrentDate, outOctets));
             }
         }
 

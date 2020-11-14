@@ -35,22 +35,12 @@
             <Label Grid.Row="2" Content="{Binding UpTime}" />
         </StackPanel>
 
-        <lvc:CartesianChart Grid.Row="3" LegendLocation="Right" Margin="5">
-            <lvc:CartesianChart.Series>
-                <lvc:LineSeries Values="{Binding InputValues}" StrokeThickness="2" StrokeDashArray="2"
-                                Title="In Octets"
-                                Stroke="#6BBA45" Fill="Transparent" LineSmoothness="1"
-                                PointGeometrySize="10" />
-                <lvc:LineSeries Values="{Binding OutputValues}" StrokeThickness="2" 
-                                Title="Out Octets"
-                                Stroke="#1C8FC5" Fill="Transparent" LineSmoothness="1" 
-                                PointGeometrySize="10" />
-            </lvc:CartesianChart.Series>
+        <lvc:CartesianChart Grid.Row="3" LegendLocation="Right" Margin="5" Series="{Binding Series}">
             <lvc:CartesianChart.AxisY>
                 <lvc:Axis Title="Octets" LabelFormatter="{Binding YFormatter}"></lvc:Axis>
             </lvc:CartesianChart.AxisY>
             <lvc:CartesianChart.AxisX>
-                <lvc:Axis Title="Time" Labels="{Binding Labels}"></lvc:Axis>
+                <lvc:Axis Title="Time" LabelFormatter="{Binding XFormatter}"></lvc:Axis>
             </lvc:CartesianChart.AxisX>
         </lvc:CartesianChart>
     </Grid>
