@@ -26,7 +26,7 @@ namespace SnmpAppWpf
         #region Ctors
         public MainWindowViewModel()
         {
-            IpAddress = "192.168.43.227";
+            IpAddress = "192.168.1.20";
             Community = "public";
             Text = "Start";
 
@@ -65,7 +65,7 @@ namespace SnmpAppWpf
         #region Methods
         private void SetTimer()
         {
-            aTimer = new Timer(1500);
+            aTimer = new Timer(3000);
             aTimer.Elapsed += OnTimedEvent;
             aTimer.AutoReset = true;
             aTimer.Enabled = false;
@@ -109,7 +109,7 @@ namespace SnmpAppWpf
                     Stroke = Brushes.Red,
                     LineSmoothness = 1,
                     PointGeometrySize = 10,
-                    Fill = gradientBrush,
+                    //Fill = gradientBrush,
                     Values = new ChartValues<DateTimePoint>()
                 },
                 new LineSeries
@@ -119,7 +119,7 @@ namespace SnmpAppWpf
                     Stroke = Brushes.Blue,
                     LineSmoothness = 1,
                     PointGeometrySize = 10,
-                    Fill = gradientBrush,
+                    //Fill = gradientBrush,
                     Values = new ChartValues<DateTimePoint>()
                 }
             };
@@ -132,18 +132,33 @@ namespace SnmpAppWpf
 
             foreach (OidRow or in snmpResolver.OidInterfaceTable)
             {
-                Interfaces.Add(
-                    new KeyValuePair<int, string>(
-                    snmpResolver.OidInterfaceTable.IndexOf(or),
-                    or.CurrentResult));
+                Interfaces.Add(new InterfaceRow()
+                {
+                    Number = snmpResolver.OidInterfaceTable.IndexOf(or) + 1,
+                    Description = or.CurrentResult
+                });
             }
         }
 
-        public ObservableCollection<KeyValuePair<int, string>> Interfaces { get; set; } = new ObservableCollection<KeyValuePair<int, string>>();
-        public KeyValuePair<int, string> SelectedInterface { get; set; } = new KeyValuePair<int, string>();
+        public ObservableCollection<InterfaceRow> Interfaces { get; set; } = new ObservableCollection<InterfaceRow>();
+
+        private InterfaceRow selectedInterface;
+        public InterfaceRow SelectedInterface { get { return selectedInterface; } set { selectedInterface = value; OnPropertyChanged(nameof(SelectedInterface)); } }
 
         public void StartStop()
         {
+            if (SelectedInterface == null)
+            {
+                MessageBox.Show("Defina a interface da qual pretende obter dados. ");
+                return;
+            }
+
+            if (!aTimer.Enabled)
+            {
+                ResetData();
+                snmpResolver.Reset();
+            }
+
             snmpResolver.SetConfig(IpAddress, Community);
             aTimer.Enabled = !aTimer.Enabled;
             Text = aTimer.Enabled ? "Stop" : "Start";
@@ -174,7 +189,13 @@ namespace SnmpAppWpf
 
         public void GetSnmp()
         {
-            snmpResolver.Get();
+            snmpResolver.GetInterfaceData(SelectedInterface.Number);
+        }
+
+        private void ResetData()
+        {
+            Series[0].Values.Clear();
+            Series[1].Values.Clear();
         }
         #endregion
 
@@ -188,5 +209,11 @@ namespace SnmpAppWpf
             }
         }
         #endregion
+    }
+
+    public class InterfaceRow
+    {
+        public int Number { get; set; }
+        public string Description { get; set; }
     }
 }

@@ -73,12 +73,12 @@ namespace SnmpAppWpf.Snmp
                 new OidRow()
                 {
                     Description = "ifInOctets",
-                    Oid = "1.3.6.1.2.1.2.2.1.10.2"
+                    Oid = "1.3.6.1.2.1.2.2.1.10"
                 },
                 new OidRow()
                 {
                     Description = "ifOutOctets",
-                    Oid = "1.3.6.1.2.1.2.2.1.16.2"
+                    Oid = "1.3.6.1.2.1.2.2.1.16"
                 }
             };
         }
@@ -140,7 +140,7 @@ namespace SnmpAppWpf.Snmp
             }
         }
 
-        public void Get()
+        public void GetInterfaceData(int interfaceId)
         {
             // SNMP community name
             OctetString communityObj = new OctetString(community);
@@ -158,7 +158,12 @@ namespace SnmpAppWpf.Snmp
             Pdu pdu = new Pdu(PduType.Get);
             foreach (OidRow or in OidTable)
             {
-                pdu.VbList.Add(or.Oid);
+                string oid = or.Oid;
+                if (or.Description == "ifInOctets" || or.Description == "ifOutOctets")
+                {
+                    oid = oid + "." + interfaceId;
+                }
+                pdu.VbList.Add(oid);
             }
 
             // Make SNMP request
