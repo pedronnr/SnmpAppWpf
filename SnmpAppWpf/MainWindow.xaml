@@ -15,6 +15,7 @@
             <RowDefinition Height="1*" />
             <RowDefinition Height="1*" />
             <RowDefinition Height="1*" />
+            <RowDefinition Height="1*" />
             <RowDefinition Height="9*" />
         </Grid.RowDefinitions>
 
@@ -25,17 +26,37 @@
             <TextBox Text="{Binding Community, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="250" />
         </StackPanel>
 
-        <Button Grid.Row="1" Content="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+            
+            <Button Content="Obter interfaces" Grid.Column="0"
+                    Command="{Binding GetInterfacesCommand}" Margin="5" />
+            <ComboBox ItemsSource="{Binding Interfaces, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                      SelectedItem="{Binding SelectedInterface, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                      Grid.Column="1">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <Label Content="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </Grid>
+
+        <Button Grid.Row="2" Content="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 Command="{Binding StartStopCommand}" Margin="5" />
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal">
+        <StackPanel Grid.Row="3" Orientation="Horizontal">
             <Label Content="Máquina:" FontWeight="ExtraBold" />
             <Label Grid.Row="2" Content="{Binding MachineName}" />
             <Label Content="Up Time:" FontWeight="ExtraBold" />
             <Label Grid.Row="2" Content="{Binding UpTime}" />
         </StackPanel>
 
-        <lvc:CartesianChart Grid.Row="3" LegendLocation="Right" Margin="5" Series="{Binding Series}">
+        <lvc:CartesianChart Grid.Row="4" LegendLocation="Right" Margin="5" Series="{Binding Series}">
             <lvc:CartesianChart.AxisY>
                 <lvc:Axis Title="Octets" LabelFormatter="{Binding YFormatter}"></lvc:Axis>
             </lvc:CartesianChart.AxisY>

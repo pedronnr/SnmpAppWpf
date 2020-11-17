@@ -6,6 +6,7 @@ using LiveCharts.Wpf;
 using SnmpAppWpf.Snmp;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Timers;
@@ -25,7 +26,7 @@ namespace SnmpAppWpf
         #region Ctors
         public MainWindowViewModel()
         {
-            IpAddress = "192.168.1.24";
+            IpAddress = "192.168.43.227";
             Community = "public";
             Text = "Start";
 
@@ -64,7 +65,7 @@ namespace SnmpAppWpf
         #region Methods
         private void SetTimer()
         {
-            aTimer = new Timer(1000);
+            aTimer = new Timer(1500);
             aTimer.Elapsed += OnTimedEvent;
             aTimer.AutoReset = true;
             aTimer.Enabled = false;
@@ -74,6 +75,11 @@ namespace SnmpAppWpf
         {
             GetSnmp();
             LoadData();
+        }
+
+        public ICommand GetInterfacesCommand
+        {
+            get { return new RelayCommand(GetInterfaces); }
         }
 
         public ICommand StartStopCommand
@@ -118,6 +124,23 @@ namespace SnmpAppWpf
                 }
             };
         }
+
+        public void GetInterfaces()
+        {
+            snmpResolver.SetConfig(IpAddress, Community);
+            snmpResolver.GetInterfaces();
+
+            foreach (OidRow or in snmpResolver.OidInterfaceTable)
+            {
+                Interfaces.Add(
+                    new KeyValuePair<int, string>(
+                    snmpResolver.OidInterfaceTable.IndexOf(or),
+                    or.CurrentResult));
+            }
+        }
+
+        public ObservableCollection<KeyValuePair<int, string>> Interfaces { get; set; } = new ObservableCollection<KeyValuePair<int, string>>();
+        public KeyValuePair<int, string> SelectedInterface { get; set; } = new KeyValuePair<int, string>();
 
         public void StartStop()
         {

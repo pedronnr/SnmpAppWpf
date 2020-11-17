@@ -22,11 +22,27 @@ namespace SnmpAppWpf.Snmp
 
         private string community = string.Empty;
         private string ipAddress = string.Empty;
+
+        public IList<OidRow> OidInterfaceTable { get; set; }
         public IList<OidRow> OidTable { get; set; }
         public IList<string> Errors { get; set; }
 
         private void GenerateOids()
         {
+            OidInterfaceTable = new List<OidRow>
+            {
+                new OidRow()
+                {
+                    Description = "if1",
+                    Oid = "1.3.6.1.2.1.2.2.1.2.1"
+                },
+                new OidRow()
+                {
+                    Description = "if2",
+                    Oid = "1.3.6.1.2.1.2.2.1.2.2"
+                }
+            };
+
             OidTable = new List<OidRow>
             {
                 new OidRow()
@@ -57,12 +73,12 @@ namespace SnmpAppWpf.Snmp
                 new OidRow()
                 {
                     Description = "ifInOctets",
-                    Oid = "1.3.6.1.2.1.2.2.1.10.1"
+                    Oid = "1.3.6.1.2.1.2.2.1.10.2"
                 },
                 new OidRow()
                 {
                     Description = "ifOutOctets",
-                    Oid = "1.3.6.1.2.1.2.2.1.16.1"
+                    Oid = "1.3.6.1.2.1.2.2.1.16.2"
                 }
             };
         }
@@ -79,6 +95,49 @@ namespace SnmpAppWpf.Snmp
         {
             this.ipAddress = ipAddress;
             this.community = community;
+        }
+
+        public void GetInterfaces()
+        {
+            // SNMP community name
+            OctetString communityObj = new OctetString(community);
+
+            // Define agent parameters class
+            AgentParameters param = new AgentParameters(communityObj);
+            param.Version = SnmpVersion.Ver2;
+
+            IpAddress agent = new IpAddress(ipAddress);
+
+            // Construct target
+            UdpTarget target = new UdpTarget((IPAddress)agent, 161, 2000, 1);
+
+            // Pdu class used for all requests
+            Pdu pdu = new Pdu(PduType.Get);
+            foreach (OidRow or in OidInterfaceTable)
+            {
+                pdu.VbList.Add(or.Oid);
+            }
+
+            // Make SNMP request
+            SnmpV2Packet result = (SnmpV2Packet)target.Request(pdu, param);
+            // If result is null then agent didn't reply or we couldn't parse the reply.
+            if (result != null)
+            {
+                // ErrorStatus other then 0 is an error returned by
+                // the Agent - see SnmpConstants for error definitions
+                if (result.Pdu.ErrorStatus != 0)
+                {
+                    // agent reported an error with the request
+                    Errors.Add($"Error in SNMP reply. Error {result.Pdu.ErrorStatus} index {result.Pdu.ErrorIndex}. ");
+                }
+                else
+                {
+                    foreach (OidRow or in OidInterfaceTable)
+                    {
+                        or.CurrentResult = result.Pdu.VbList[OidInterfaceTable.IndexOf(or)].Value.ToString();
+                    }
+                }
+            }
         }
 
         public void Get()
@@ -155,5 +214,12 @@ namespace SnmpAppWpf.Snmp
     {
         public DateTime RequestDate { get; set; }
         public string Value { get; set; }
+    }
+
+    internal class InterfacesTable
+    {
+        public int Number { get; set; }
+
+        public string Description { get; set; }
     }
 }
