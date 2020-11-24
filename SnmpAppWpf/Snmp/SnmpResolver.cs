@@ -1,21 +1,17 @@
 ﻿using SnmpSharpNet;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 
 namespace SnmpAppWpf.Snmp
 {
     internal class SnmpResolver
     {
-        public SnmpResolver() : this("", "")
-        {
-
-        }
-
         public SnmpResolver(string ipAddress, string community)
         {
-            ipAddress = ipAddress;
-            community = community;
+            this.ipAddress = ipAddress;
+            this.community = community;
 
             GenerateOids();
         }
@@ -23,24 +19,39 @@ namespace SnmpAppWpf.Snmp
         private string community = string.Empty;
         private string ipAddress = string.Empty;
 
+        public IList<OidRow> OidInterfaceNumber { get; set; }
         public IList<OidRow> OidInterfaceTable { get; set; }
         public IList<OidRow> OidTable { get; set; }
         public IList<string> Errors { get; set; }
 
         private void GenerateOids()
         {
-            OidInterfaceTable = new List<OidRow>
+            OidInterfaceNumber = new List<OidRow>
             {
                 new OidRow()
                 {
-                    Description = "if1",
-                    Oid = "1.3.6.1.2.1.2.2.1.2.1"
-                },
-                new OidRow()
-                {
-                    Description = "if2",
-                    Oid = "1.3.6.1.2.1.2.2.1.2.2"
+                    Description = "ifNumber",
+                    Oid = "1.3.6.1.2.1.2.1.0"
                 }
+            };
+
+            OidInterfaceTable = new List<OidRow>
+            {
+                //new OidRow()
+                //{
+                //    Description = "if",
+                //    Oid = "1.3.6.1.2.1.2.2.1.2.{0}"
+                //}
+                //new OidRow()
+                //{
+                //    Description = "if1",
+                //    Oid = "1.3.6.1.2.1.2.2.1.2.1"
+                //},
+                //new OidRow()
+                //{
+                //    Description = "if2",
+                //    Oid = "1.3.6.1.2.1.2.2.1.2.2"
+                //}
             };
 
             OidTable = new List<OidRow>
@@ -73,12 +84,12 @@ namespace SnmpAppWpf.Snmp
                 new OidRow()
                 {
                     Description = "ifInOctets",
-                    Oid = "1.3.6.1.2.1.2.2.1.10"
+                    Mask = "1.3.6.1.2.1.2.2.1.10.{0}"
                 },
                 new OidRow()
                 {
                     Description = "ifOutOctets",
-                    Oid = "1.3.6.1.2.1.2.2.1.16"
+                    Mask = "1.3.6.1.2.1.2.2.1.16.{0}"
                 }
             };
         }
@@ -97,7 +108,7 @@ namespace SnmpAppWpf.Snmp
             this.community = community;
         }
 
-        public void GetInterfaces()
+        private void GetSNMPValues(IList<OidRow> oidTable)
         {
             // SNMP community name
             OctetString communityObj = new OctetString(community);
@@ -113,57 +124,9 @@ namespace SnmpAppWpf.Snmp
 
             // Pdu class used for all requests
             Pdu pdu = new Pdu(PduType.Get);
-            foreach (OidRow or in OidInterfaceTable)
+            foreach (OidRow or in oidTable)
             {
                 pdu.VbList.Add(or.Oid);
-            }
-
-            // Make SNMP request
-            SnmpV2Packet result = (SnmpV2Packet)target.Request(pdu, param);
-            // If result is null then agent didn't reply or we couldn't parse the reply.
-            if (result != null)
-            {
-                // ErrorStatus other then 0 is an error returned by
-                // the Agent - see SnmpConstants for error definitions
-                if (result.Pdu.ErrorStatus != 0)
-                {
-                    // agent reported an error with the request
-                    Errors.Add($"Error in SNMP reply. Error {result.Pdu.ErrorStatus} index {result.Pdu.ErrorIndex}. ");
-                }
-                else
-                {
-                    foreach (OidRow or in OidInterfaceTable)
-                    {
-                        or.CurrentResult = result.Pdu.VbList[OidInterfaceTable.IndexOf(or)].Value.ToString();
-                    }
-                }
-            }
-        }
-
-        public void GetInterfaceData(int interfaceId)
-        {
-            // SNMP community name
-            OctetString communityObj = new OctetString(community);
-
-            // Define agent parameters class
-            AgentParameters param = new AgentParameters(communityObj);
-            param.Version = SnmpVersion.Ver2;
-
-            IpAddress agent = new IpAddress(ipAddress);
-
-            // Construct target
-            UdpTarget target = new UdpTarget((IPAddress)agent, 161, 2000, 1);
-
-            // Pdu class used for all requests
-            Pdu pdu = new Pdu(PduType.Get);
-            foreach (OidRow or in OidTable)
-            {
-                string oid = or.Oid;
-                if (or.Description == "ifInOctets" || or.Description == "ifOutOctets")
-                {
-                    oid = oid + "." + interfaceId;
-                }
-                pdu.VbList.Add(oid);
             }
 
             // Make SNMP request
@@ -183,10 +146,10 @@ namespace SnmpAppWpf.Snmp
                     DateTime date = DateTime.Now;
                     // Reply variables are returned in the same order as they were added
                     //  to the VbList
-                    foreach (OidRow or in OidTable)
+                    foreach (OidRow or in oidTable)
                     {
                         or.PreviousResult = or.CurrentResult;
-                        or.CurrentResult = result.Pdu.VbList[OidTable.IndexOf(or)].Value.ToString();
+                        or.CurrentResult = result.Pdu.VbList[oidTable.IndexOf(or)].Value.ToString();
                         or.CurrentDate = date;
 
                         or.Results.Add(new OidResult()
@@ -203,11 +166,52 @@ namespace SnmpAppWpf.Snmp
             }
             target.Close();
         }
+
+        public void GetInterfaces()
+        {
+            GetSNMPValues(OidInterfaceNumber);
+
+            if (OidInterfaceNumber.First().CurrentResult != null)
+            {
+                OidInterfaceTable.Clear();
+
+                bool success = int.TryParse(OidInterfaceNumber.First().CurrentResult, out int interfacesNumber);
+                if (success)
+                {
+                    string mask = "1.3.6.1.2.1.2.2.1.2.{0}";
+                    for (int i = 1; i <= interfacesNumber; i++)
+                    {
+                        OidInterfaceTable.Add(new OidRow() {
+                            Description = $"if{i}",
+                            Oid = string.Format(mask, i)
+                        });
+                    }
+                    GetSNMPValues(OidInterfaceTable);
+                }
+            }
+        }
+
+        public void GetInterfaceData(int interfaceId)
+        {
+            var oidRowIn = OidTable.FirstOrDefault(r => r.Description.Equals("ifInOctets"));
+            if (oidRowIn != null)
+            {
+                oidRowIn.Oid = string.Format(oidRowIn.Mask, interfaceId);
+            }
+            var oidRowOut = OidTable.FirstOrDefault(r => r.Description.Equals("ifOutOctets"));
+            if (oidRowOut != null)
+            {
+                oidRowOut.Oid = string.Format(oidRowOut.Mask, interfaceId);
+            }
+
+            GetSNMPValues(OidTable);
+        }
     }
 
     internal class OidRow
     {
         public string Description { get; set; }
+        public string Mask { get; set; }
         public string Oid { get; set; }
         public string PreviousResult { get; set; }
         public string CurrentResult { get; set; }

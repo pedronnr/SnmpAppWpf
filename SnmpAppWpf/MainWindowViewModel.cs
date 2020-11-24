@@ -26,7 +26,7 @@ namespace SnmpAppWpf
         #region Ctors
         public MainWindowViewModel()
         {
-            IpAddress = "192.168.1.20";
+            IpAddress = "192.168.1.22";
             Community = "public";
             Text = "Start";
 
