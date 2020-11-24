@@ -13,6 +13,7 @@ using System.Timers;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using static SnmpAppWpf.Snmp.SnmpResolver;
 
 namespace SnmpAppWpf
 {
@@ -166,11 +167,11 @@ namespace SnmpAppWpf
 
         private void LoadData()
         {
-            MachineName = snmpResolver.OidTable.FirstOrDefault(r => r.Description == "sysDescr")?.CurrentResult;
-            UpTime = snmpResolver.OidTable.FirstOrDefault(r => r.Description == "sysUpTime")?.CurrentResult;
+            MachineName = snmpResolver.OidTable.FirstOrDefault(r => r.Description == SNMPTypes.sysDescr)?.CurrentResult;
+            UpTime = snmpResolver.OidTable.FirstOrDefault(r => r.Description == SNMPTypes.sysUpTime)?.CurrentResult;
 
-            var oidRowInOctets = snmpResolver.OidTable.FirstOrDefault(r => r.Description == "ifInOctets");
-            var oidRowOutOctets = snmpResolver.OidTable.FirstOrDefault(r => r.Description == "ifOutOctets");
+            var oidRowInOctets = snmpResolver.OidTable.FirstOrDefault(r => r.Description == SNMPTypes.ifInOctets);
+            var oidRowOutOctets = snmpResolver.OidTable.FirstOrDefault(r => r.Description == SNMPTypes.ifOutOctets);
 
             if (oidRowInOctets != null && oidRowOutOctets != null)
             {

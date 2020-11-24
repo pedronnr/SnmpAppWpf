@@ -3,11 +3,22 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using static SnmpAppWpf.Snmp.SnmpResolver;
 
 namespace SnmpAppWpf.Snmp
 {
     internal class SnmpResolver
     {
+        public enum SNMPTypes
+        {
+            ifNumber,
+            ifn,
+            sysDescr,
+            sysUpTime,
+            ifInOctets,
+            ifOutOctets
+        }
+
         public SnmpResolver(string ipAddress, string community)
         {
             this.ipAddress = ipAddress;
@@ -30,65 +41,33 @@ namespace SnmpAppWpf.Snmp
             {
                 new OidRow()
                 {
-                    Description = "ifNumber",
+                    Description = SNMPTypes.ifNumber,
                     Oid = "1.3.6.1.2.1.2.1.0"
                 }
             };
 
-            OidInterfaceTable = new List<OidRow>
-            {
-                //new OidRow()
-                //{
-                //    Description = "if",
-                //    Oid = "1.3.6.1.2.1.2.2.1.2.{0}"
-                //}
-                //new OidRow()
-                //{
-                //    Description = "if1",
-                //    Oid = "1.3.6.1.2.1.2.2.1.2.1"
-                //},
-                //new OidRow()
-                //{
-                //    Description = "if2",
-                //    Oid = "1.3.6.1.2.1.2.2.1.2.2"
-                //}
-            };
+            OidInterfaceTable = new List<OidRow>();
 
             OidTable = new List<OidRow>
             {
                 new OidRow()
                 {
-                    Description = "sysDescr",
+                    Description = SNMPTypes.sysDescr,
                     Oid = "1.3.6.1.2.1.1.1.0"
                 },
                 new OidRow()
                 {
-                    Description = "sysObjectID",
-                    Oid = "1.3.6.1.2.1.1.2.0"
-                },
-                new OidRow()
-                {
-                    Description = "sysUpTime",
+                    Description = SNMPTypes.sysUpTime,
                     Oid = "1.3.6.1.2.1.1.3.0"
                 },
                 new OidRow()
                 {
-                    Description = "sysContact",
-                    Oid = "1.3.6.1.2.1.1.4.0"
-                },
-                new OidRow()
-                {
-                    Description = "sysName",
-                    Oid = "1.3.6.1.2.1.1.5.0"
-                },
-                new OidRow()
-                {
-                    Description = "ifInOctets",
+                    Description = SNMPTypes.ifInOctets,
                     Mask = "1.3.6.1.2.1.2.2.1.10.{0}"
                 },
                 new OidRow()
                 {
-                    Description = "ifOutOctets",
+                    Description = SNMPTypes.ifOutOctets,
                     Mask = "1.3.6.1.2.1.2.2.1.16.{0}"
                 }
             };
@@ -181,8 +160,9 @@ namespace SnmpAppWpf.Snmp
                     string mask = "1.3.6.1.2.1.2.2.1.2.{0}";
                     for (int i = 1; i <= interfacesNumber; i++)
                     {
-                        OidInterfaceTable.Add(new OidRow() {
-                            Description = $"if{i}",
+                        OidInterfaceTable.Add(new OidRow()
+                        {
+                            Description = SNMPTypes.ifn,
                             Oid = string.Format(mask, i)
                         });
                     }
@@ -193,12 +173,12 @@ namespace SnmpAppWpf.Snmp
 
         public void GetInterfaceData(int interfaceId)
         {
-            var oidRowIn = OidTable.FirstOrDefault(r => r.Description.Equals("ifInOctets"));
+            var oidRowIn = OidTable.FirstOrDefault(r => r.Description == SNMPTypes.ifInOctets);
             if (oidRowIn != null)
             {
                 oidRowIn.Oid = string.Format(oidRowIn.Mask, interfaceId);
             }
-            var oidRowOut = OidTable.FirstOrDefault(r => r.Description.Equals("ifOutOctets"));
+            var oidRowOut = OidTable.FirstOrDefault(r => r.Description == SNMPTypes.ifOutOctets);
             if (oidRowOut != null)
             {
                 oidRowOut.Oid = string.Format(oidRowOut.Mask, interfaceId);
@@ -210,7 +190,7 @@ namespace SnmpAppWpf.Snmp
 
     internal class OidRow
     {
-        public string Description { get; set; }
+        public SNMPTypes Description { get; set; }
         public string Mask { get; set; }
         public string Oid { get; set; }
         public string PreviousResult { get; set; }
